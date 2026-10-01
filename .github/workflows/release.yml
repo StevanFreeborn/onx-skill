@@ -1,0 +1,50 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v*'
+permissions:
+  contents: write
+jobs:
+  publish-release:
+    name: Package and Release Skill
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+      - name: Validate skill specification
+        run: npx skills-ref validate .
+      - name: Package skill archives
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          ARCHIVE_NAME="onx-skill-${VERSION}"
+          STAGE_DIR="staging/${ARCHIVE_NAME}"
+          mkdir -p "${STAGE_DIR}"
+
+          cp -r SKILL.md README.md LICENSE.md references scripts "${STAGE_DIR}/"
+
+          tar -czf "${ARCHIVE_NAME}.tar.gz" -C staging "${ARCHIVE_NAME}"
+          sha256sum "${ARCHIVE_NAME}.tar.gz" > "${ARCHIVE_NAME}.tar.gz.sha256"
+
+          zip -r "${ARCHIVE_NAME}.zip" staging/"${ARCHIVE_NAME}"
+          sha256sum "${ARCHIVE_NAME}.zip" > "${ARCHIVE_NAME}.zip.sha256"
+
+          mkdir dist
+          mv "${ARCHIVE_NAME}".* dist/
+          cd dist
+          cat *.sha256 > SHA256SUMS.txt
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          name: Release ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/*.sha256
+            dist/SHA256SUMS.txt
