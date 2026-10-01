@@ -26,7 +26,7 @@ To update the skill to the latest version:
 npx skills update onx-skill
 ```
 
-### Manual Installation (Git Clone or Download)
+### Manual Installation
 
 Clone or symlink the repository into your agent's skills directory:
 
